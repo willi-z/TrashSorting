@@ -11,7 +11,8 @@ import json
 from tqdm import tqdm
 import time
 from elasticsearch import Elasticsearch
-
+from elasticsearch.exceptions import RequestError
+from urllib3.exceptions import NewConnectionError
 
 databasepage = 'https://www.makeitfrom.com'
 
@@ -28,23 +29,33 @@ def str_to_num(string:str):
     else:
         return int(string)
 
+
 def scrape_site(url):
-    def __extract__(path):
-        site = url + path
+    def __scrape_page__(site: str):
+        if site in pages:
+            return
         pages.append(site)
-        response = requests.get(site)
+        connection = False
+        response = None
+        while not connection:
+            time.sleep(1)  # hide activity
+            # print(site)
+            try:
+                response = requests.get(site)
+                connection = True
+            except NewConnectionError:
+                connection = False
+
         soup = BeautifulSoup(response.content, 'html.parser')
+        return soup
+
+    def __extract__(content, site):
         material = dict()
-        material["name"] = str(soup.find("h1").contents[0])
-        material["url"] = str(url + path)
+        material["name"] = str(content.find("h1").contents[0])
+        material["url"] = str(site)
 
-        print("###############")
-        # print("extract: " + url + path)
-        print("name: " + material["name"])
-        print("###############")
-
-        res = es.search(index="materials", query={"match": {"name": material["name"]}})
-        if res['hits']['hits']:
+        res = es.search(index="materials", query={"match": {"url": {"query": material["url"], "operator": "and"}}})
+        if res["hits"]["hits"]:
             return
 
         def __extract_data__(attribute):
@@ -56,7 +67,7 @@ def scrape_site(url):
                 unit = str(data[1].contents[0])
             else:
                 unit = ""
-            property["name"] = name
+            # property["name"] = name
             value = str(value)
             value = value.replace(" ", "")
             if "to" in value:
@@ -67,17 +78,20 @@ def scrape_site(url):
             property["max"] = str_to_num(values[-1])
             property["unit"] = unit
             # print(property)
+            if not conversion.get(name):
+                print(name)
+                conversion[name] = name.lower()
             material[conversion[name]] = property
 
-        for attr in soup.find_all(attrs={"class": "mech"}):
+        for attr in content.find_all(attrs={"class": "mech"}):
             __extract_data__(attr.contents)
-        for attr in soup.find_all(attrs={"class": "therm"}):
+        for attr in content.find_all(attrs={"class": "therm"}):
             __extract_data__(attr.contents)
-        for attr in soup.find_all(attrs={"class": "ele"}):
+        for attr in content.find_all(attrs={"class": "ele"}):
             __extract_data__(attr.contents)
-        for attr in soup.find_all(attrs={"class": "other"}):
+        for attr in content.find_all(attrs={"class": "other"}):
             __extract_data__(attr.contents)
-        for attr in soup.find_all(attrs={"class": "common"}):
+        for attr in content.find_all(attrs={"class": "common"}):
             __extract_data__(attr.contents)
 
         if material.get(""):
@@ -85,34 +99,33 @@ def scrape_site(url):
 
         res = es.index(index="materials", document=material)
 
-
-    def __scrape__(path, show=False):
-        time.sleep(0.5)  # hide activity
-        site = url + path
-        pages.append(site)
-        response = requests.get(site)
-        soup = BeautifulSoup(response.content, 'html.parser')
-
+    def __scrape__(content, show=False):
         def __scrape__link__(link):
             path = str(link.get('href'))
-            if url+path in pages:
+            site = url+path
+            if site in pages:
                 return
-            if path.startswith('/material-group'):
-                __scrape__(path)
-            elif path.startswith('/material-properties'):
-                __extract__(path)
-                __scrape__(path)
 
-        links = soup.find_all('a')
+            if path.startswith('/material-group'):
+                html_content = __scrape_page__(site)
+                __scrape__(html_content)
+            elif path.startswith('/material-properties'):
+                html_content = __scrape_page__(site)
+                __extract__(html_content, site)
+                __scrape__(html_content)
+
+        links = content.find_all('a')
         if show:
-            for i in tqdm(range(len(links)), desc="Scraping..."):
+            for i in tqdm(range(6, len(links)), desc="Scraping..."):
                 link = links[i]
                 __scrape__link__(link)
         else:
             for i in range(len(links)):
                 link = links[i]
                 __scrape__link__(link)
-    __scrape__("/", True)
+
+    page_content = __scrape_page__(url + "/")
+    __scrape__(page_content, True)
 
 
 scrape_site(databasepage)

@@ -22,7 +22,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - vibhuviesdata:/usr/share/elasticsearch/data
+      - ./data:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
       - 9300:9300

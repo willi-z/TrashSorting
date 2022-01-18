@@ -1,6 +1,7 @@
 {
   "<makeitfrom-property>": "database-property",
-  "Brinell Hardness": "hardness",
+  "Brinell Hardness": "brinell",
+  "Rockwell B Hardness": "rockwell",
   "Elastic (Young's, Tensile) Modulus": "young",
   "Elongation at Break": "elongation",
   "Fatigue Strength": "fatique strength",
@@ -12,6 +13,8 @@
   "Compressive (Crushing) Strength": "compressive strength",
   "Flexural Modulus": "flexural modulus",
   "Flexural Strength": "flexural strength",
+  "Impact Strength: V-Notched Charpy": "charpy",
+  "Fracture Toughness": "fracture toughness",
 
   "Latent Heat of Fusion": "fusion heat",
   "Maximum Temperature: Mechanical": "",
@@ -22,6 +25,7 @@
   "Thermal Expansion": "thermal expansion",
   "Maximum Temperature: Autoignition": "autoignition",
   "Glass Transition Temperature": "glass transition temperature",
+  "Solidification (Pattern Maker's) Shrinkage": "solidification shrinkage",
 
   "Electrical Conductivity: Equal Volume": "",
   "Electrical Conductivity: Equal Weight (Specific)": "",
