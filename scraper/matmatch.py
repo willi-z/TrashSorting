@@ -31,6 +31,17 @@ def extract_materials(materials):
         print("url: " + str(url))
         response = requests.get(url)
         soup = BeautifulSoup(response.content, 'html.parser')
+
+        name = soup.find_all("h1")
+        name = name[0].contents[0]
+        print(name)
+
+        categories = soup.find_all("a", attrs={"class": "styled-link-styles__StyledLinkStyles-sc-l1ctuc-0 dwsZLK"})
+        for i in range(len(categories)):
+            categories[i] = categories[i].contents[0]
+        print(categories)
+
+
         tables = soup.find_all("table")
         for table in tables:
             print("#################")
@@ -57,9 +68,9 @@ def extract_materials(materials):
 
 
 def scrape_categories():
-    start = 2
+    start = 1
     for category_counter in range(start, start + 1):
-        page = 15
+        page = 1
         while True:
             print(page)
             url = matmatch_url + categories_request + catagories[category_counter] + f"&page={page}"
@@ -72,14 +83,15 @@ def scrape_categories():
                 path = link.get("href")
                 if str(path).startswith("/materials/"):
                     materials.append(link)
-                    name = link.contents[0]
-                    print(name)
+                    # name = link.contents[0]
+                    # print(name)
             if len(materials) == 0:
                 break
-            print(materials)
-            # extract_materials(materials)
+            extract_materials(materials)
             page += 1
 
 
+if __name__ == "__main__":
+    scrape_categories()
 
 
